@@ -23,7 +23,8 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         instance = this;
-        
+        if (ThemeManager.instance != null)
+            gameData = ThemeManager.instance.GetCurrentTheme();
     }
 
     private void Start()
@@ -52,7 +53,7 @@ public class GameManager : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(0))
             {
-                OnTouch();
+                OnTouch?.Invoke();
             }
 
             yield return null;

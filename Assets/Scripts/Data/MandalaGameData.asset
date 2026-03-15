@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b580b6082685a8b4099cd08469849be4, type: 3}
+  m_Name: MandalaGameData
+  m_EditorClassIdentifier:
+  initialBlockScale: {x: 5.6, y: 1, z: 5.6}
+  blockMoveTime: 1.5
+  blockSpawnDistance: 5
+  minDistance: 0.2
+  camMoveTime: 0.6
+  colorPalette:
+  - {r: 0.48235294, g: 0.12156863, b: 0.63529412, a: 1}
+  - {r: 0.91372549, g: 0.11764706, b: 0.38823529, a: 1}
+  - {r: 0.95686275, g: 0.26274510, b: 0.21176471, a: 1}
+  - {r: 1.00000000, g: 0.59607843, b: 0.00000000, a: 1}
+  - {r: 1.00000000, g: 0.75686275, b: 0.02745098, a: 1}
+  - {r: 0.61176471, g: 0.15294118, b: 0.69019608, a: 1}
+  - {r: 0.24705882, g: 0.31764706, b: 0.70980392, a: 1}
+  - {r: 0.40392157, g: 0.22745098, b: 0.71764706, a: 1}
+  - {r: 0.67843137, g: 0.07843137, b: 0.34117647, a: 1}
+  - {r: 0.83137255, g: 0.68627451, b: 0.21568627, a: 1}
+  deltaColor: 0.08
+  bgColorPalette:
+  - {r: 0.10196078, g: 0.00000000, b: 0.18823529, a: 1}
+  - {r: 0.23921569, g: 0.00000000, b: 0.40000000, a: 1}
+  - {r: 0.36078431, g: 0.00000000, b: 0.50196078, a: 1}
+  - {r: 0.29019608, g: 0.00000000, b: 0.31372549, a: 1}
+  - {r: 0.15294118, g: 0.00000000, b: 0.25490196, a: 1}
+  blockPattern: 1
+  blockOffsetHeight: 3.95
+  endingSpeed: 20
+  perfectCondition: 8
+  perfectScale: 0.5

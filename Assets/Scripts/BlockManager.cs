@@ -28,6 +28,8 @@ public class BlockManager : MonoBehaviour
 
     int perfectCount;
 
+    Texture2D blockPatternTexture;
+
 
     private void Start()
     {
@@ -48,13 +50,18 @@ public class BlockManager : MonoBehaviour
 
         gameData = GameManager.instance.gameData;
         GameManager.instance.OnTouch += OnTouch;
-        
+
+        GenerateBlockPattern();
+
         currentBlockScale = gameData.initialBlockScale;
         currentBlockCount = 0;
         randomColorOffset = Random.Range(0f, gameData.colorPalette.Length - 1f);
-        randomBgColorOffset = Random.Range(0f, gameData.colorPalette.Length - 1f);
 
-        background.InitColor(GetCurrentColor(randomBgColorOffset), GetCurrentColor(randomBgColorOffset + 1));
+        var bgPalLen = (gameData.bgColorPalette != null && gameData.bgColorPalette.Length > 0)
+            ? gameData.bgColorPalette.Length : gameData.colorPalette.Length;
+        randomBgColorOffset = Random.Range(0f, bgPalLen - 1f);
+
+        background.InitColor(GetCurrentBgColor(randomBgColorOffset), GetCurrentBgColor(randomBgColorOffset + 1));
 
        
 
@@ -102,7 +109,7 @@ public class BlockManager : MonoBehaviour
                 movePos.z = gameData.blockSpawnDistance + preBlock.transform.position.z;
             }
 
-            background.SetColor(GetCurrentColor(randomBgColorOffset), GetCurrentColor(randomBgColorOffset + 1));
+            background.SetColor(GetCurrentBgColor(randomBgColorOffset), GetCurrentBgColor(randomBgColorOffset + 1));
             currentBlock = SpawnBlock(currentBlockScale, spawnPos, GetCurrentColor(randomColorOffset));
             UIManager.instance.SetScoreText(currentBlockCount.ToString());
             currentBlockCount++;
@@ -248,7 +255,9 @@ public class BlockManager : MonoBehaviour
         block.transform.localScale = scale;
         block.transform.position = position;
         block.transform.parent = transform;
-        block.GetComponent<MeshRenderer>().material.SetColor("_BaseColor", color);
+        var mat = block.GetComponent<MeshRenderer>().material;
+        mat.SetColor("_BaseColor", color);
+        mat.SetTexture("_BaseMap", blockPatternTexture != null ? blockPatternTexture : Texture2D.whiteTexture);
 
         return block;
     }
@@ -327,11 +336,104 @@ public class BlockManager : MonoBehaviour
 
     Color GetCurrentColor(float offset)
     {
-
-        float colorID = ((currentBlockCount+ gameData.colorPalette.Length) * gameData.deltaColor + offset) % gameData.colorPalette.Length;
+        float colorID = ((currentBlockCount + gameData.colorPalette.Length) * gameData.deltaColor + offset) % gameData.colorPalette.Length;
         int colorI1 = (int)colorID;
         int colorI2 = (colorI1 + 1) % gameData.colorPalette.Length;
         float middleValue = colorID - colorI1;
         return Color.Lerp(gameData.colorPalette[colorI1], gameData.colorPalette[colorI2], middleValue);
+    }
+
+    Color GetCurrentBgColor(float offset)
+    {
+        var palette = (gameData.bgColorPalette != null && gameData.bgColorPalette.Length > 0)
+            ? gameData.bgColorPalette : gameData.colorPalette;
+        float colorID = ((currentBlockCount + palette.Length) * gameData.deltaColor + offset) % palette.Length;
+        int colorI1 = (int)colorID;
+        int colorI2 = (colorI1 + 1) % palette.Length;
+        float middleValue = colorID - colorI1;
+        return Color.Lerp(palette[colorI1], palette[colorI2], middleValue);
+    }
+
+    // ── Procedural block-face patterns ────────────────────────────────────────
+
+    void GenerateBlockPattern()
+    {
+        if (blockPatternTexture != null)
+        {
+            Destroy(blockPatternTexture);
+            blockPatternTexture = null;
+        }
+
+        switch (gameData.blockPattern)
+        {
+            case BlockPatternType.Mandala:
+                blockPatternTexture = BuildMandalaTexture(64);
+                break;
+            case BlockPatternType.Stars:
+                blockPatternTexture = BuildStarsTexture(64);
+                break;
+        }
+    }
+
+    // Concentric rings with 8-petal radial symmetry — subtle grayscale (0.78–1.0)
+    Texture2D BuildMandalaTexture(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        float c = size * 0.5f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = x - c, dy = y - c;
+                float dist  = Mathf.Sqrt(dx * dx + dy * dy) / c;
+                float angle = Mathf.Atan2(dy, dx);
+
+                float rings  = Mathf.Sin(dist * Mathf.PI * 9f) * 0.5f + 0.5f;
+                float petals = Mathf.Abs(Mathf.Cos(angle * 8f)) * 0.5f + 0.5f;
+                float edge   = Mathf.Clamp01(1f - (dist - 0.85f) * 6f);
+
+                float b = Mathf.Lerp(0.78f, 1.0f, rings * petals * edge);
+                tex.SetPixel(x, y, new Color(b, b, b, 1f));
+            }
+        }
+
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode   = TextureWrapMode.Clamp;
+        tex.Apply();
+        return tex;
+    }
+
+    // Dark centre-glow with 12 crisp star dots — grayscale (0.70–1.0)
+    Texture2D BuildStarsTexture(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        float c = size * 0.5f;
+
+        // Subtle radial glow as base
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(c, c)) / c;
+                float b = Mathf.Lerp(0.88f, 0.70f, dist);
+                tex.SetPixel(x, y, new Color(b, b, b, 1f));
+            }
+
+        // Fixed star positions (seed 42 → same every build)
+        var rng = new System.Random(42);
+        for (int i = 0; i < 12; i++)
+        {
+            int sx = rng.Next(3, size - 3);
+            int sy = rng.Next(3, size - 3);
+            tex.SetPixel(sx, sy, Color.white);
+            foreach (var d in new[] { (-1,0),(1,0),(0,-1),(0,1) })
+                tex.SetPixel(sx + d.Item1, sy + d.Item2,
+                    Color.Lerp(tex.GetPixel(sx + d.Item1, sy + d.Item2), Color.white, 0.45f));
+        }
+
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode   = TextureWrapMode.Clamp;
+        tex.Apply();
+        return tex;
     }
 }
