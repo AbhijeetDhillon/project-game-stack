@@ -375,7 +375,7 @@ public class BlockManager : MonoBehaviour
         }
     }
 
-    // Concentric rings with 8-petal radial symmetry — subtle grayscale (0.78–1.0)
+    // Concentric rings with 8-petal radial symmetry — soft grayscale (0.84–1.0)
     Texture2D BuildMandalaTexture(int size)
     {
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
@@ -389,11 +389,13 @@ public class BlockManager : MonoBehaviour
                 float dist  = Mathf.Sqrt(dx * dx + dy * dy) / c;
                 float angle = Mathf.Atan2(dy, dx);
 
-                float rings  = Mathf.Sin(dist * Mathf.PI * 9f) * 0.5f + 0.5f;
+                // Fewer, wider rings (7 vs 9) for a softer, less busy look
+                float rings  = Mathf.Sin(dist * Mathf.PI * 7f) * 0.5f + 0.5f;
                 float petals = Mathf.Abs(Mathf.Cos(angle * 8f)) * 0.5f + 0.5f;
                 float edge   = Mathf.Clamp01(1f - (dist - 0.85f) * 6f);
 
-                float b = Mathf.Lerp(0.78f, 1.0f, rings * petals * edge);
+                // Raised floor (0.84) keeps darks soft — no harsh shadows
+                float b = Mathf.Lerp(0.84f, 1.0f, rings * petals * edge);
                 tex.SetPixel(x, y, new Color(b, b, b, 1f));
             }
         }
@@ -404,33 +406,62 @@ public class BlockManager : MonoBehaviour
         return tex;
     }
 
-    // Dark centre-glow with 12 crisp star dots — grayscale (0.70–1.0)
+    // Van Gogh "Starry Night" style: bright star cores with spiralling halo rings
     Texture2D BuildStarsTexture(int size)
     {
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        float c = size * 0.5f;
+        var pixels = new Color[size * size];
 
-        // Subtle radial glow as base
+        // Star layout: (u, v) in 0-1 space, halo radius in 0-1 space
+        // Larger first entry = dominant moon/bright-star like in the painting
+        var stars = new (float u, float v, float r)[]
+        {
+            (0.50f, 0.55f, 0.20f),   // large central star / moon
+            (0.22f, 0.78f, 0.09f),   // upper-left
+            (0.76f, 0.80f, 0.10f),   // upper-right
+            (0.14f, 0.38f, 0.07f),   // mid-left
+            (0.84f, 0.46f, 0.08f),   // mid-right
+            (0.47f, 0.18f, 0.06f),   // lower-centre
+            (0.35f, 0.60f, 0.05f),   // inner accent
+        };
+
         for (int y = 0; y < size; y++)
+        {
             for (int x = 0; x < size; x++)
             {
-                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(c, c)) / c;
-                float b = Mathf.Lerp(0.88f, 0.70f, dist);
-                tex.SetPixel(x, y, new Color(b, b, b, 1f));
-            }
+                float u = x / (float)size;
+                float v = y / (float)size;
 
-        // Fixed star positions (seed 42 → same every build)
-        var rng = new System.Random(42);
-        for (int i = 0; i < 12; i++)
-        {
-            int sx = rng.Next(3, size - 3);
-            int sy = rng.Next(3, size - 3);
-            tex.SetPixel(sx, sy, Color.white);
-            foreach (var d in new[] { (-1,0),(1,0),(0,-1),(0,1) })
-                tex.SetPixel(sx + d.Item1, sy + d.Item2,
-                    Color.Lerp(tex.GetPixel(sx + d.Item1, sy + d.Item2), Color.white, 0.45f));
+                float val = 0.12f; // deep dark base
+
+                foreach (var s in stars)
+                {
+                    float dx = u - s.u;
+                    float dy = v - s.v;
+                    float dist  = Mathf.Sqrt(dx * dx + dy * dy);
+                    float angle = Mathf.Atan2(dy, dx);
+
+                    // Bright Gaussian core
+                    float core = Mathf.Exp(-dist * dist / (s.r * s.r * 0.12f));
+                    val += core * 0.95f;
+
+                    // Van Gogh swirling halo: spiral offset shifts ring phase by angle
+                    // → arcs instead of perfect circles, mimicking brushstroke direction
+                    float spiralDist = dist + (angle / (Mathf.PI * 2f)) * s.r * 0.45f;
+                    float rings = Mathf.Sin(spiralDist / s.r * Mathf.PI * 5f) * 0.5f + 0.5f;
+
+                    // Halo fades in beyond core and out at 2.8× radius
+                    float haloInner = Mathf.Clamp01((dist - s.r * 0.3f) / (s.r * 0.3f));
+                    float haloOuter = Mathf.Clamp01(1f - dist / (s.r * 2.8f));
+                    val += rings * haloInner * haloOuter * 0.55f;
+                }
+
+                val = Mathf.Clamp01(val);
+                pixels[y * size + x] = new Color(val, val, val, 1f);
+            }
         }
 
+        tex.SetPixels(pixels);
         tex.filterMode = FilterMode.Bilinear;
         tex.wrapMode   = TextureWrapMode.Clamp;
         tex.Apply();
