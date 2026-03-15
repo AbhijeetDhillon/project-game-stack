@@ -255,9 +255,26 @@ public class BlockManager : MonoBehaviour
         block.transform.localScale = scale;
         block.transform.position = position;
         block.transform.parent = transform;
-        var mat = block.GetComponent<MeshRenderer>().material;
-        mat.SetColor("_BaseColor", color);
-        mat.SetTexture("_BaseMap", blockPatternTexture != null ? blockPatternTexture : Texture2D.whiteTexture);
+
+        // Plain tint on all side/bottom faces — no pattern texture here
+        block.GetComponent<MeshRenderer>().material.SetColor("_BaseColor", color);
+
+        // Pattern texture applied ONLY to top face via a thin child Quad decal.
+        // The Quad has localScale (1,1,1) so it inherits the block's XZ scale exactly.
+        // localPosition y=0.502 sits just above the top face (block half-height = 0.5).
+        if (blockPatternTexture != null)
+        {
+            var decal = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Destroy(decal.GetComponent<Collider>());
+            decal.transform.parent        = block.transform;
+            decal.transform.localPosition = new Vector3(0f, 0.502f, 0f);
+            decal.transform.localRotation = Quaternion.Euler(90f, 0f, 0f); // lie flat
+            decal.transform.localScale    = Vector3.one;                    // fills block top
+
+            var decalMat = decal.GetComponent<MeshRenderer>().material;
+            decalMat.SetColor("_BaseColor", color);
+            decalMat.SetTexture("_BaseMap", blockPatternTexture);
+        }
 
         return block;
     }

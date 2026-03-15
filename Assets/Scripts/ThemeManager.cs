@@ -11,6 +11,9 @@ public class ThemeManager : MonoBehaviour
 
     int _selectedTheme;
 
+    // Read-only access to current index for UIManager / UIScore display
+    public int currentThemeIndex => _selectedTheme;
+
     void Awake()
     {
         instance = this;
@@ -27,16 +30,22 @@ public class ThemeManager : MonoBehaviour
         }
     }
 
-    public void ToggleTheme()
+    // Direct selection — called when a theme button is tapped
+    public void SelectTheme(int index)
     {
-        _selectedTheme = (_selectedTheme + 1) % 3;
+        _selectedTheme = Mathf.Clamp(index, 0, 2);
         PlayerPrefs.SetInt("SelectedTheme", _selectedTheme);
         PlayerPrefs.Save();
     }
 
-    public string GetThemeName()
+    // Kept for any legacy callers
+    public void ToggleTheme() => SelectTheme((_selectedTheme + 1) % 3);
+
+    public string GetThemeName()  => GetThemeName(_selectedTheme);
+
+    public static string GetThemeName(int index)
     {
-        switch (_selectedTheme)
+        switch (index)
         {
             case 1: return "MANDALA";
             case 2: return "STARRY";
