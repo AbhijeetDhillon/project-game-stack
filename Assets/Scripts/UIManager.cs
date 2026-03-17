@@ -85,8 +85,8 @@ public class UIManager : MonoBehaviour
             var img = themeButtons[i].GetComponent<Image>();
             if (img != null)
                 img.color = (i == selected)
-                    ? new Color(1f, 1f, 1f, 0.85f)
-                    : new Color(1f, 1f, 1f, 0.25f);
+                    ? new Color(1f, 1f, 1f, 0.90f)
+                    : new Color(1f, 1f, 1f, 0.55f);
 
             // Score label under this button
             if (themeScoreTexts != null && i < themeScoreTexts.Length && themeScoreTexts[i] != null)

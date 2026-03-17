@@ -10,7 +10,7 @@ public class AdsManager : MonoBehaviour
 
     // ── Ad IDs ────────────────────────────────────────────────────────────────
     // Set USE_TEST_ADS to false only when submitting a production build
-    const bool USE_TEST_ADS = true;
+    const bool USE_TEST_ADS = false;
 
 #if UNITY_ANDROID
     const string realAdUnitId  = "ca-app-pub-8860686787222189/8642719108";
