@@ -53,8 +53,21 @@ sysinfo.txt
 
 # Builds
 *.apk
+*.aab
 *.unitypackage
+
+# iOS build output
+[Ii][Oo][Ss]\ app/
+
+# Build debug info
+Build\ Stack_BurstDebugInformation_DoNotShip/
 
 # Crashlytics generated file
 crashlytics-build.properties
+
+# Claude Code internal files
+.claude/
+
+# Unity user-specific settings
+UserSettings/
 
